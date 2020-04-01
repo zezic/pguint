@@ -9,27 +9,35 @@ ifneq (,$(indexonlyscan_supported))
 export PGOPTIONS = -c enable_indexonlyscan=off
 endif
 
-extension_version = 0
-
 EXTENSION = uint
 MODULE_big = uint
 OBJS = aggregates.o hash.o hex.o inout.o magic.o misc.o operators.o
-DATA_built = uint--$(extension_version).sql
+DATA_built = uint--1.sql uint--0--1.sql \
+		 uint--0.sql
 
 REGRESS = init hash hex operators misc drop
 REGRESS_OPTS = --inputdir=test
 
-EXTRA_CLEAN += operators.c operators.sql test/sql/operators.sql
+EXTRA_CLEAN += operators.c operators--0.sql.in test/sql/operators.sql
 
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
-uint--$(extension_version).sql: uint.sql hash.sql hex.sql operators.sql
+uint--1.sql.in: types--1.sql.in hash--0.sql.in hex--0.sql.in operators--0.sql.in
+	cat $^ >$@
+
+uint--0--1.sql.in: types--0--1.sql.in
+	cat $^ >$@
+
+uint--0.sql.in: types--0.sql.in hash--0.sql.in hex--0.sql.in operators--0.sql.in
+	cat $^ >$@
+
+uint--%.sql: uint--%.sql.in
 	cat $^ >$@
 
 PYTHON ?= python
 
-operators.c operators.sql test/sql/operators.sql: generate.py
+operators.c operators--0.sql.in test/sql/operators.sql: generate.py
 	$(PYTHON) $< $(MAJORVERSION)
 
 python-check: generate.py
